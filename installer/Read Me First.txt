@@ -1,0 +1,40 @@
+KINTSUGI  金継ぎ
+a Reluctant Astronaut plugin, restored by OBP
+
+HOW TO INSTALL (Mac)
+
+1. Double-click "Kintsugi.pkg".
+
+2. macOS will probably stop you with a message that it "cannot verify" the
+   installer or that it's from an "unidentified developer". That's only because
+   this plugin is made by a friend, not bought from a company that pays Apple
+   to sign its software. To open it anyway:
+
+     - Click "Done" (or "OK") to close the message.
+     - Open System Settings > Privacy & Security.
+     - Scroll down. You'll see a line about "Kintsugi.pkg" with an
+       "Open Anyway" button. Click it, and confirm with your password.
+
+   (On older macOS versions you can instead right-click Kintsugi.pkg,
+   choose Open, and click Open again.)
+
+3. Follow the installer: Continue, Install, and your Mac password.
+   It installs both versions: VST3 (Cubase, Ableton Live, Reaper, Studio One...)
+   and Audio Unit (Logic Pro, GarageBand).
+
+4. Open your music program and let it find the plugin:
+     - Cubase: Studio > VST Plug-in Manager > Rescan.
+       Kintsugi is under Distortion, from Reluctant Astronaut.
+     - Logic / GarageBand: found automatically when you open it.
+     - Others: restart, or use the program's plugin rescan.
+
+GETTING STARTED
+
+Put Kintsugi on every track, and one more on the master bus with Glue turned
+up. The defaults are deliberately subtle: you'll feel it more than hear it.
+
+TO UNINSTALL
+
+Delete these two items (Finder > Go > Go to Folder... and paste the path):
+  /Library/Audio/Plug-Ins/VST3/Kintsugi.vst3
+  /Library/Audio/Plug-Ins/Components/Kintsugi.component
