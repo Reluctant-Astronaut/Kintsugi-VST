@@ -1,0 +1,76 @@
+name: Build Kintsugi
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  mac:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        run: cmake -B build -G Xcode -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"
+
+      - name: Build VST3 and AU
+        run: |
+          cmake --build build --config Release --target Kintsugi_VST3 -- -quiet
+          cmake --build build --config Release --target Kintsugi_AU -- -quiet
+
+      - name: Sign the plugins (ad-hoc, so Apple Silicon Macs will load them)
+        run: |
+          cd build/Kintsugi_artefacts/Release
+          codesign --force --deep --sign - VST3/Kintsugi.vst3
+          codesign --force --deep --sign - AU/Kintsugi.component
+          codesign --verify --deep --verbose VST3/Kintsugi.vst3
+          codesign --verify --deep --verbose AU/Kintsugi.component
+
+      - name: Package the plugins on their own
+        run: |
+          mkdir -p out
+          cd build/Kintsugi_artefacts/Release
+          ditto -c -k --keepParent VST3/Kintsugi.vst3 "$GITHUB_WORKSPACE/out/Kintsugi-VST3.zip"
+          ditto -c -k --keepParent AU/Kintsugi.component "$GITHUB_WORKSPACE/out/Kintsugi-AU.zip"
+
+      - name: Build the Mac installer
+        run: |
+          set -e
+          REL=build/Kintsugi_artefacts/Release
+          VERSION=1.0.0
+
+          # one folder per component, laid out exactly as it will be installed
+          mkdir -p pkgroot/vst3/Library/Audio/Plug-Ins/VST3 pkgroot/au/Library/Audio/Plug-Ins/Components
+          ditto "$REL/VST3/Kintsugi.vst3" pkgroot/vst3/Library/Audio/Plug-Ins/VST3/Kintsugi.vst3
+          ditto "$REL/AU/Kintsugi.component" pkgroot/au/Library/Audio/Plug-Ins/Components/Kintsugi.component
+
+          # always install to the standard plug-in folders, even if an old copy sits elsewhere
+          for c in vst3 au; do
+            pkgbuild --analyze --root pkgroot/$c $c.plist
+            plutil -replace BundleIsRelocatable -bool NO $c.plist
+          done
+
+          pkgbuild --root pkgroot/vst3 --component-plist vst3.plist --install-location / \
+                   --identifier com.reluctantastronaut.kintsugi.vst3 --version $VERSION Kintsugi-VST3.pkg
+          pkgbuild --root pkgroot/au --component-plist au.plist --install-location / \
+                   --identifier com.reluctantastronaut.kintsugi.au --version $VERSION Kintsugi-AU.pkg
+
+          productbuild --distribution installer/distribution.xml --resources installer/resources \
+                       --package-path . installer-out.pkg
+
+          mkdir -p "share/Kintsugi Installer"
+          mv installer-out.pkg "share/Kintsugi Installer/Kintsugi.pkg"
+          cp "installer/Read Me First.txt" "share/Kintsugi Installer/"
+          cd share && ditto -c -k --keepParent "Kintsugi Installer" "$GITHUB_WORKSPACE/out/Kintsugi-Mac-Installer.zip"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Kintsugi-mac
+          path: |
+            out/Kintsugi-VST3.zip
+            out/Kintsugi-AU.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Kintsugi-Mac-Installer
+          path: out/Kintsugi-Mac-Installer.zip
